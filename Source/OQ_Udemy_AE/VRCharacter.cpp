@@ -10,6 +10,7 @@
 #include "NavigationSystem.h"
 #include "Components/PostProcessComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "MotionControllerComponent.h"
 //#include "Camera/PlayerCameraManager.h"
 //#include "GameFramework/PlayerController.h"
 //#include "DrawDebugHelpers.h"
@@ -28,6 +29,17 @@ AVRCharacter::AVRCharacter()
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(VRRoot);
+
+	LeftController = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("LeftController"));
+	LeftController->SetupAttachment(VRRoot);
+	LeftController->bDisplayDeviceModel = true;
+	LeftController->SetTrackingSource(EControllerHand::Left);	
+
+	RightController = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("RightController"));
+	RightController->SetupAttachment(VRRoot);
+	RightController->bDisplayDeviceModel = true;
+	RightController->SetTrackingSource(EControllerHand::Right);
+
 
 	DestinationMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DestinationMarker"));
 	// doesn't matter if we attach this to the root because we will update the position every frame anyways
@@ -87,8 +99,11 @@ void AVRCharacter::Tick(float DeltaTime)
 
 bool AVRCharacter::FindTeleportDestination(FVector &outLocation)
 {
-	FVector start = Camera->GetComponentLocation(); // where eyes will be 
-	FVector end = start + Camera->GetForwardVector() * MaxTeleportDistance; // current locatio of camera + direction we are looking at * by how far we want to ray trace
+	FVector start = RightController->GetComponentLocation(); // where eyes will be 
+	FVector look = RightController->GetForwardVector();
+	// rotate aroudn a certain axis by a given angle. Right axis of the right controller
+	look = look.RotateAngleAxis(30, RightController->GetRightVector());
+	FVector end = start + look * MaxTeleportDistance; // current locatio of camera + direction we are looking at * by how far we want to ray trace
 
 	FHitResult hitResult;
 	// if we hit something
@@ -184,6 +199,7 @@ FVector2D AVRCharacter::GetBlinkerCenter()
 		return FVector2D(.5f, .5f);
 
 	FVector worldStationaryLocation;
+	// if the movement direction is moving in front, project it positive
 	if (FVector::DotProduct(Camera->GetForwardVector(), movementDirection) > 0)
 	{
 		// multiplying by 1000 puts the location at least 10 meters in front of us

@@ -40,8 +40,15 @@ private:
 	void StartFade(float fromAlpha, float toAlpha);
 
 private: 
+	//
 	UPROPERTY(VisibleAnywhere)
 	class UCameraComponent *Camera;
+	
+	UPROPERTY(VisibleAnywhere)
+	class UMotionControllerComponent *LeftController;	
+	
+	UPROPERTY(VisibleAnywhere)
+	class UMotionControllerComponent *RightController;	
 
 	UPROPERTY(VisibleAnywhere)
 	class USceneComponent *VRRoot;
