@@ -66,7 +66,13 @@ private:
 
 private: 
 	UPROPERTY(EditAnywhere)
-	float MaxTeleportDistance = 1000; // 100cm is 1 metter. 1000cm is 10 meters
+	float TeleportProjectileSpeed = 800; // 100cm is 1 metter. 1000cm is 10 meters
+
+	UPROPERTY(EditAnywhere)
+	float TeleportSimulationTime = 1; // affects the length of the trace
+
+	UPROPERTY(EditAnywhere)
+	float TeleportProjectileRadius = 10; 
 	
 	UPROPERTY(EditAnywhere)
 	float TeleportFadeTime = 1; // 100cm is 1 metter. 1000cm is 10 meters

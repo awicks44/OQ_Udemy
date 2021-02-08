@@ -11,6 +11,7 @@
 #include "Components/PostProcessComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MotionControllerComponent.h"
+#include "Kismet/GameplayStatics.h"
 //#include "Camera/PlayerCameraManager.h"
 //#include "GameFramework/PlayerController.h"
 //#include "DrawDebugHelpers.h"
@@ -95,24 +96,38 @@ void AVRCharacter::Tick(float DeltaTime)
 	UpdateDestinationMarker();
 
 	UpdateBlinkers();
+
+	
+	
 }
 
 bool AVRCharacter::FindTeleportDestination(FVector &outLocation)
 {
 	FVector start = RightController->GetComponentLocation(); // where eyes will be 
 	FVector look = RightController->GetForwardVector();
-	// rotate aroudn a certain axis by a given angle. Right axis of the right controller
-	look = look.RotateAngleAxis(30, RightController->GetRightVector());
-	FVector end = start + look * MaxTeleportDistance; // current locatio of camera + direction we are looking at * by how far we want to ray trace
 
-	FHitResult hitResult;
-	// if we hit something
-	bool bHit = GetWorld()->LineTraceSingleByChannel(hitResult, start, end, ECC_Visibility);
+	// no longer need to calculate our end anymore
+	
+
+	FPredictProjectilePathParams pathParams(
+		TeleportProjectileRadius,
+		start,
+		look * TeleportProjectileSpeed,
+		TeleportSimulationTime,
+		ECollisionChannel::ECC_Visibility,
+		this);
+
+	pathParams.DrawDebugType = EDrawDebugTrace::ForOneFrame;
+	pathParams.bTraceComplex = true;
+
+	FPredictProjectilePathResult pathResult;
+
+	bool bHit = UGameplayStatics::PredictProjectilePath(this, pathParams, pathResult);	
 
 	if (!bHit) return false;
 
 	FNavLocation navLocation;
-	bool bOnNavMesh = UNavigationSystemV1::GetCurrent(GetWorld())->ProjectPointToNavigation(hitResult.Location, navLocation, TeleportProjectionExtent);
+	bool bOnNavMesh = UNavigationSystemV1::GetCurrent(GetWorld())->ProjectPointToNavigation(pathResult.HitResult.Location, navLocation, TeleportProjectionExtent);
 
 	if (!bOnNavMesh) return false;
 
