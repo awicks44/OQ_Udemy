@@ -27,9 +27,21 @@ public:
 	void SetHand(EControllerHand hand) { MotionController->SetTrackingSource(hand); }
 
 private: 
+	// set based on the following signature: FActorBeginOverlapSignature, AActor, OnActorBeginOverlap, AActor*, OverlappedActor, AActor*, OtherActor
+	UFUNCTION()
+	void ActorBeginOverlap(AActor* OverlappedActor, AActor* OtherActor);
+	UFUNCTION()
+	void ActorEndOverlap(AActor* OverlappedActor, AActor* OtherActor);
+
+	bool CanClimb() const; // doesn' need to mutate the state of the actor, so we put const on it
+
+private: 
 
 	UPROPERTY(VisibleAnywhere)
 	UMotionControllerComponent *MotionController;
+
+	// state
+	bool bCanClimb = false;
 
 	
 

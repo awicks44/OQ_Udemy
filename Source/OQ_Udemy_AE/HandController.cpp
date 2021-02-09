@@ -3,6 +3,7 @@
 
 #include "HandController.h"
 #include "MotionControllerComponent.h"
+#include "Runtime/Engine/Classes/Engine/Engine.h"
 
 // Sets default values
 AHandController::AHandController()
@@ -22,6 +23,9 @@ AHandController::AHandController()
 void AHandController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	OnActorBeginOverlap.AddDynamic(this, &AHandController::ActorBeginOverlap);
+	OnActorEndOverlap.AddDynamic(this, &AHandController::ActorEndOverlap);
 	
 }
 
@@ -30,5 +34,39 @@ void AHandController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AHandController::ActorEndOverlap(AActor* OverlappedActor, AActor* OtherActor)
+{
+	bCanClimb = CanClimb();
+}
+
+void AHandController::ActorBeginOverlap(AActor * OverlappedActor, AActor * OtherActor)
+{
+	bool bNewCanClimb = CanClimb();
+	if (!bCanClimb && bNewCanClimb)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, TEXT("Can climb"));
+		UE_LOG(LogTemp, Warning, TEXT("Can Climb"));
+	}
+
+	bCanClimb = bNewCanClimb;
+}
+
+bool AHandController::CanClimb() const
+{
+	TArray<AActor*> actors;
+
+	GetOverlappingActors(actors);
+
+	for (AActor * overlappingActor : actors)
+	{
+		if (overlappingActor->ActorHasTag(TEXT("Climbable")))
+		{
+			return true;
+		}
+	}	
+
+	return false;
 }
 
