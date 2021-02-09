@@ -27,13 +27,14 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private: 
-	bool FindTeleportDestination(FVector &outLocation);
+	bool FindTeleportDestination(TArray<FVector> &outPath, FVector &outLocation);
 	void UpdateDestinationMarker();
 	void MoveForward(float throttle);
 	void MoveRight(float throttle);
 	void BeginTeleport();
 	void FinishTeleport();
 	void UpdateBlinkers();
+	void UpdateSpline(const TArray<FVector> &path); // adding const here ensures that we don't make copies of this variable
 	FVector2D GetBlinkerCenter();
 
 
@@ -52,6 +53,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	class USceneComponent *VRRoot;
+
+	UPROPERTY(VisibleAnywhere) // want to change it's properties in blueprint
+	class USplineComponent * TeleportPath;
 	
 	// once we add this property, we made a blueprint class based on this class because we were goign to reference an asset
 	// easier to reference assets using blueprints. 
@@ -63,6 +67,8 @@ private:
 
 	UPROPERTY()
 	class UMaterialInstanceDynamic * BlinkerMaterialInst;
+
+
 
 private: 
 	UPROPERTY(EditAnywhere)
