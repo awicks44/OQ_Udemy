@@ -10,10 +10,11 @@
 #include "NavigationSystem.h"
 #include "Components/PostProcessComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#include "MotionControllerComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SplineComponent.h"
 #include "Components/SplineMeshComponent.h"
+#include "HandController.h"
+
 //#include "Camera/PlayerCameraManager.h"
 //#include "GameFramework/PlayerController.h"
 //#include "DrawDebugHelpers.h"
@@ -31,20 +32,10 @@ AVRCharacter::AVRCharacter()
 	VRRoot->SetupAttachment(GetRootComponent());
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	Camera->SetupAttachment(VRRoot);
+	Camera->SetupAttachment(VRRoot);		
 
-	LeftController = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("LeftController"));
-	LeftController->SetupAttachment(VRRoot);
-	LeftController->bDisplayDeviceModel = true;
-	LeftController->SetTrackingSource(EControllerHand::Left);	
-
-	RightController = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("RightController"));
-	RightController->SetupAttachment(VRRoot);
-	RightController->bDisplayDeviceModel = true;
-	RightController->SetTrackingSource(EControllerHand::Right);
-
-	TeleportPath = CreateDefaultSubobject<USplineComponent>(TEXT("TeleportPath"));
-	TeleportPath->SetupAttachment(RightController);
+	TeleportPath = CreateDefaultSubobject<USplineComponent>(TEXT("TeleportPath"));	
+	TeleportPath->SetupAttachment(VRRoot);
 	
 	DestinationMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DestinationMarker"));	
 	DestinationMarker->SetupAttachment(GetRootComponent()); // doesn't matter if we attach this to the root because we will update the position every frame anyways
@@ -67,6 +58,23 @@ void AVRCharacter::BeginPlay()
 
 		//apply the material to the post process conmponent on the actor
 		PostProcessComponent->AddOrUpdateBlendable(BlinkerMaterialInst);	
+	}
+
+
+	LController = GetWorld()->SpawnActor<AHandController>(HandControllerClass);
+	if (LController != nullptr)
+	{
+		LController->AttachToComponent(VRRoot, FAttachmentTransformRules::KeepRelativeTransform);		
+		LController->SetHand(EControllerHand::Left);
+		LController->SetOwner(this);
+	}
+
+	RController = GetWorld()->SpawnActor<AHandController>(HandControllerClass);
+	if (RController != nullptr)
+	{
+		RController->AttachToComponent(VRRoot, FAttachmentTransformRules::KeepRelativeTransform);		
+		RController->SetHand(EControllerHand::Right);
+		RController->SetOwner(this);
 	}
 }
 
@@ -100,8 +108,11 @@ void AVRCharacter::Tick(float DeltaTime)
 
 bool AVRCharacter::FindTeleportDestination(TArray<FVector> &outPath, FVector &outLocation)
 {
-	FVector start = RightController->GetComponentLocation(); // where eyes will be 
-	FVector look = RightController->GetForwardVector();
+	if (RController == nullptr)
+		return false;
+
+	FVector start = RController->GetActorLocation(); // where eyes will be 
+	FVector look = RController->GetActorForwardVector();
 
 	// no longer need to calculate our end anymore
 	

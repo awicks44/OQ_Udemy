@@ -47,10 +47,10 @@ private:
 	class UCameraComponent *Camera;
 	
 	UPROPERTY(VisibleAnywhere)
-	class UMotionControllerComponent *LeftController;	
-	
+	class AHandController *LController;
+
 	UPROPERTY(VisibleAnywhere)
-	class UMotionControllerComponent *RightController;	
+	class AHandController *RController;
 
 	UPROPERTY(VisibleAnywhere)
 	class USceneComponent *VRRoot;
@@ -74,7 +74,7 @@ private:
 
 
 
-private: 
+private: // configuration parameters
 	UPROPERTY(EditAnywhere)
 	float TeleportProjectileSpeed = 800; // 100cm is 1 metter. 1000cm is 10 meters
 
@@ -101,4 +101,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly) // [EditDefaultsOnly] we only want to edit this in the blueprint. We don't want the leve to overwrite it
 	class UMaterialInterface *TeleportArchMaterial;	
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AHandController> HandControllerClass;
 };
