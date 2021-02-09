@@ -13,6 +13,7 @@
 #include "MotionControllerComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SplineComponent.h"
+#include "Components/SplineMeshComponent.h"
 //#include "Camera/PlayerCameraManager.h"
 //#include "GameFramework/PlayerController.h"
 //#include "DrawDebugHelpers.h"
@@ -113,7 +114,7 @@ bool AVRCharacter::FindTeleportDestination(TArray<FVector> &outPath, FVector &ou
 		ECollisionChannel::ECC_Visibility,
 		this);
 
-	pathParams.DrawDebugType = EDrawDebugTrace::ForOneFrame;
+	//pathParams.DrawDebugType = EDrawDebugTrace::ForOneFrame;
 	pathParams.bTraceComplex = true;
 
 	FPredictProjectilePathResult pathResult;
@@ -154,6 +155,10 @@ void AVRCharacter::UpdateDestinationMarker()
 	else
 	{
 		DestinationMarker->SetVisibility(false);
+
+		// if we don't have a destination, we shouldn't draw anything to the screen. Don't show a path.
+		TArray<FVector> emptyPath;
+		DrawTeleportPath(emptyPath);
 	}
 }
 
@@ -190,9 +195,9 @@ void AVRCharacter::BeginTeleport()
 
 void AVRCharacter::FinishTeleport()
 {
-	float actorHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-	
-	SetActorLocation(DestinationMarker->GetComponentLocation() + actorHeight);
+	FVector destination = DestinationMarker->GetComponentLocation();
+	destination += GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * GetActorUpVector();	
+	SetActorLocation(destination);
 	
 	StartFade(1, 0);
 }
@@ -212,29 +217,46 @@ void AVRCharacter::UpdateBlinkers()
 
 void AVRCharacter::DrawTeleportPath(const TArray<FVector>& path)
 {
-	UpdateSpline(path);
+	UpdateSpline(path);	
 
-	for (int32 i = 0; i < path.Num(); i++)
+	for (USplineMeshComponent * splineMesh : TeleportPathMeshPool)
+	{
+		splineMesh->SetVisibility(false);
+	}
+
+	int32 numOfSegments = path.Num() - 1;
+	for (int32 i = 0; i < numOfSegments; i++)
 	{
 		// if the number of objects inm the pool is still less than the number of points in the the path [points in the path will change dynamically the farther this user projects out]
 		// if we don't have enough meshes in the pool to match the number of points, we create a new one
 		if (TeleportPathMeshPool.Num() <= i) 
 		{
-			UStaticMeshComponent * DynamicMesh = NewObject<UStaticMeshComponent>(this);
-			DynamicMesh->AttachToComponent(VRRoot, FAttachmentTransformRules::KeepRelativeTransform);
-			DynamicMesh->SetStaticMesh(TeleportArchMesh);
-			DynamicMesh->SetMaterial(0, TeleportArchMaterial);
-			DynamicMesh->RegisterComponent();
+			USplineMeshComponent * SplineMesh = NewObject<USplineMeshComponent>(this);			
+			SplineMesh->SetMobility(EComponentMobility::Movable);
+			// previously attaching to VR root. Will not attached to VRRoot since we are getting positions that are in local space to the TeleportPath
+			// we want the local space to be the same for the spline mesh so we can do that easily by attaching the child spline mesh to the TeleportPath
+			SplineMesh->AttachToComponent(TeleportPath, FAttachmentTransformRules::KeepRelativeTransform);
+			SplineMesh->SetStaticMesh(TeleportArchMesh);			
+			SplineMesh->SetMaterial(0, TeleportArchMaterial);						
+			SplineMesh->RegisterComponent();
 
-			TeleportPathMeshPool.Add(DynamicMesh);
+			TeleportPathMeshPool.Add(SplineMesh);
 		}
 
 		// then we grab out one of the meshes in the pool and set it to the locatino of the path
 		// we are ensured that we have a mesh at 'i' because of the if statement
-		UStaticMeshComponent *DynamicMesh = TeleportPathMeshPool[i];
+		USplineMeshComponent *SplineMesh = TeleportPathMeshPool[i];
+		SplineMesh->SetVisibility(true);
 
+		FVector startLocation, startTangent;
+		FVector endLocation, endTangent;
 
-		DynamicMesh->SetWorldLocation(path[i]);
+		TeleportPath->GetLocalLocationAndTangentAtSplinePoint(i, startLocation, startTangent);
+		TeleportPath->GetLocalLocationAndTangentAtSplinePoint(i + 1, endLocation, endTangent);
+
+		SplineMesh->SetStartAndEnd(startLocation, startTangent, endLocation, endTangent);
+		// was previously setting the world location of the spline mesh to match that of the path point locations. Won't do that anymore. In turn, the spline mesh location will stay at (0, 0, 0)
+		
 	}
 }
 
