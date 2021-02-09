@@ -3,7 +3,8 @@
 
 #include "HandController.h"
 #include "MotionControllerComponent.h"
-#include "Runtime/Engine/Classes/Engine/Engine.h"
+#include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AHandController::AHandController()
@@ -14,9 +15,6 @@ AHandController::AHandController()
 	MotionController = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("MotionController"));
 	
 	SetRootComponent(MotionController);
-	// not sure if I need
-	/*Controller->bDisplayDeviceModel = true;	
-	Controller->SetTrackingSource(EControllerHand::Left);*/
 }
 
 // Called when the game starts or when spawned
@@ -46,8 +44,22 @@ void AHandController::ActorBeginOverlap(AActor * OverlappedActor, AActor * Other
 	bool bNewCanClimb = CanClimb();
 	if (!bCanClimb && bNewCanClimb)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, TEXT("Can climb"));
 		UE_LOG(LogTemp, Warning, TEXT("Can Climb"));
+
+		APlayerController *controller = UGameplayStatics::GetPlayerController(GetWorld(), 0);		
+
+		// alterate way of getting the player controller from an actor
+		/*AActor *pawn = Cast<APawn>(GetAttachParentActor()); // we know that the parent of this object is a Character (which is a pawn)
+		if (pawn != nullptr)
+		{
+			APlayerController * controller = Cast<APlayerController>(pawn->GetInstigatorController());
+			if (controller != nullptr)
+			{
+				controller->PlayHapticEffect(HFERumble, MotionController->GetTrackingSource());
+			}
+		}*/
+		
+		controller->PlayHapticEffect(HFERumble, MotionController->GetTrackingSource());			
 	}
 
 	bCanClimb = bNewCanClimb;

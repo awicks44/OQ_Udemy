@@ -43,6 +43,11 @@ private:
 	// state
 	bool bCanClimb = false;
 
+private: 
+	UPROPERTY(EditAnywhere)
+	class UHapticFeedbackEffect_Base *HFERumble;
+
+
 	
 
 };
