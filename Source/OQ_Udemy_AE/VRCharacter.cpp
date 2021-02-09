@@ -44,18 +44,12 @@ AVRCharacter::AVRCharacter()
 
 	TeleportPath = CreateDefaultSubobject<USplineComponent>(TEXT("TeleportPath"));
 	TeleportPath->SetupAttachment(RightController);
+	
+	DestinationMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DestinationMarker"));	
+	DestinationMarker->SetupAttachment(GetRootComponent()); // doesn't matter if we attach this to the root because we will update the position every frame anyways
 
-	DestinationMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DestinationMarker"));
-	// doesn't matter if we attach this to the root because we will update the position every frame anyways
-	DestinationMarker->SetupAttachment(GetRootComponent());
-
-	PostProcessComponent = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
-	// doesn't matter where we attach it
-	PostProcessComponent->SetupAttachment(GetRootComponent());		
-
-	//BlinkerMaterialBase->CreateDefaultSubobject<UMaterialInstanceDynamic>(TEXT("BlinkerMaterialInst"));
-
-
+	PostProcessComponent = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));	
+	PostProcessComponent->SetupAttachment(GetRootComponent());		// doesn't matter where we attach it
 }
 
 // Called when the game starts or when spawned
@@ -73,7 +67,6 @@ void AVRCharacter::BeginPlay()
 		//apply the material to the post process conmponent on the actor
 		PostProcessComponent->AddOrUpdateBlendable(BlinkerMaterialInst);	
 	}
-	
 }
 
 // Called every frame
@@ -156,7 +149,7 @@ void AVRCharacter::UpdateDestinationMarker()
 		DestinationMarker->SetVisibility(true);
 		DestinationMarker->SetWorldLocation(location); // used to pass in the hitResult.Location before checking to hit the NavMesh
 
-		UpdateSpline(path);
+		DrawTeleportPath(path);
 	}
 	else
 	{
@@ -216,6 +209,35 @@ void AVRCharacter::UpdateBlinkers()
 	FVector2D center = GetBlinkerCenter();
 	BlinkerMaterialInst->SetVectorParameterValue(TEXT("Center"), FLinearColor(center.X, center.Y, 0));
 }
+
+void AVRCharacter::DrawTeleportPath(const TArray<FVector>& path)
+{
+	UpdateSpline(path);
+
+	for (int32 i = 0; i < path.Num(); i++)
+	{
+		// if the number of objects inm the pool is still less than the number of points in the the path [points in the path will change dynamically the farther this user projects out]
+		// if we don't have enough meshes in the pool to match the number of points, we create a new one
+		if (TeleportPathMeshPool.Num() <= i) 
+		{
+			UStaticMeshComponent * DynamicMesh = NewObject<UStaticMeshComponent>(this);
+			DynamicMesh->AttachToComponent(VRRoot, FAttachmentTransformRules::KeepRelativeTransform);
+			DynamicMesh->SetStaticMesh(TeleportArchMesh);
+			DynamicMesh->SetMaterial(0, TeleportArchMaterial);
+			DynamicMesh->RegisterComponent();
+
+			TeleportPathMeshPool.Add(DynamicMesh);
+		}
+
+		// then we grab out one of the meshes in the pool and set it to the locatino of the path
+		// we are ensured that we have a mesh at 'i' because of the if statement
+		UStaticMeshComponent *DynamicMesh = TeleportPathMeshPool[i];
+
+
+		DynamicMesh->SetWorldLocation(path[i]);
+	}
+}
+
 
 void AVRCharacter::UpdateSpline(const TArray<FVector>& path)
 {

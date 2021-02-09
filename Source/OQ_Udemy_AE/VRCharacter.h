@@ -34,6 +34,7 @@ private:
 	void BeginTeleport();
 	void FinishTeleport();
 	void UpdateBlinkers();
+	void DrawTeleportPath(const TArray<FVector> &path);
 	void UpdateSpline(const TArray<FVector> &path); // adding const here ensures that we don't make copies of this variable
 	FVector2D GetBlinkerCenter();
 
@@ -68,6 +69,9 @@ private:
 	UPROPERTY()
 	class UMaterialInstanceDynamic * BlinkerMaterialInst;
 
+	UPROPERTY()
+	TArray<class UStaticMeshComponent*>  TeleportPathMeshPool;
+
 
 
 private: 
@@ -91,4 +95,10 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	class UCurveFloat * RadiusVsVelocity; // speed vs time || y vs x || accleration vs time 
+
+	UPROPERTY(EditDefaultsOnly) // [EditDefaultsOnly] we only want to edit this in the blueprint. We don't want the leve to overwrite it
+	class UStaticMesh *TeleportArchMesh;
+
+	UPROPERTY(EditDefaultsOnly) // [EditDefaultsOnly] we only want to edit this in the blueprint. We don't want the leve to overwrite it
+	class UMaterialInterface *TeleportArchMaterial;	
 };
