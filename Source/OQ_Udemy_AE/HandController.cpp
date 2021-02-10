@@ -5,6 +5,8 @@
 #include "MotionControllerComponent.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 AHandController::AHandController()
@@ -32,6 +34,16 @@ void AHandController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (bIsClimbing)
+	{
+		// we have the current position of the hand controller and the current position of the hand controller 
+		// the difference between those 2 will give us how far the actor has moved
+		// gives us the vector that goes from the climb start location to the get actor's location
+		FVector handControllerDelta = GetActorLocation() - ClimbingStartLocation;
+		// we watn to move the pawn in the opposite direction to negate that motion and bring the the hand controller back to the climbStartLocation
+		// we don't need to cast because we can move the transform of whatever the actor is
+		GetAttachParentActor()->AddActorWorldOffset(-handControllerDelta);
+	}	
 }
 
 void AHandController::ActorEndOverlap(AActor* OverlappedActor, AActor* OtherActor)
@@ -44,8 +56,6 @@ void AHandController::ActorBeginOverlap(AActor * OverlappedActor, AActor * Other
 	bool bNewCanClimb = CanClimb();
 	if (!bCanClimb && bNewCanClimb)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Can Climb"));
-
 		APlayerController *controller = UGameplayStatics::GetPlayerController(GetWorld(), 0);		
 
 		// alterate way of getting the player controller from an actor
@@ -57,8 +67,7 @@ void AHandController::ActorBeginOverlap(AActor * OverlappedActor, AActor * Other
 			{
 				controller->PlayHapticEffect(HFERumble, MotionController->GetTrackingSource());
 			}
-		}*/
-		
+		}*/		
 		controller->PlayHapticEffect(HFERumble, MotionController->GetTrackingSource());			
 	}
 
@@ -80,5 +89,56 @@ bool AHandController::CanClimb() const
 	}	
 
 	return false;
+}
+
+void AHandController::Grip()
+{
+	if (!bCanClimb)
+		return;
+
+	if (!bIsClimbing)
+	{
+		
+		OtherController->bIsClimbing = false;
+		
+		bIsClimbing = true;
+		// this locaiton will be somwhere off in the distance
+		ClimbingStartLocation = GetActorLocation();
+
+		ACharacter *character = Cast<ACharacter>(GetAttachParentActor());
+
+		if (character != nullptr)
+		{
+			character->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+		}
+		
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Pressing"));
+}
+
+void AHandController::Release()
+{
+	if (bIsClimbing)
+	{
+		bIsClimbing = false;
+		
+		ACharacter *character = Cast<ACharacter>(GetAttachParentActor());
+
+		if (character != nullptr)
+		{
+			character->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+		}
+	}
+	
+
+	UE_LOG(LogTemp, Warning, TEXT("Releasing"));
+}
+
+void AHandController::PairController(AHandController* controller)
+{
+	OtherController = controller;
+	// our other controller's, 'other' controller will be us
+	OtherController->OtherController = this;
 }
 

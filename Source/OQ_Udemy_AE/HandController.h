@@ -25,6 +25,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	void SetHand(EControllerHand hand) { MotionController->SetTrackingSource(hand); }
+	void PairController(AHandController* controller);
+	void Grip();
+	void Release();
 
 private: 
 	// set based on the following signature: FActorBeginOverlapSignature, AActor, OnActorBeginOverlap, AActor*, OverlappedActor, AActor*, OtherActor
@@ -42,6 +45,11 @@ private:
 
 	// state
 	bool bCanClimb = false;
+	bool bIsClimbing = false;
+	FVector ClimbingStartLocation;
+
+	AHandController *OtherController;
+
 
 private: 
 	UPROPERTY(EditAnywhere)

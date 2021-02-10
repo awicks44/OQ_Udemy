@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HandController.h"
 #include "GameFramework/Character.h"
 #include "VRCharacter.generated.h"
 
@@ -31,6 +32,10 @@ private:
 	void UpdateDestinationMarker();
 	void MoveForward(float throttle);
 	void MoveRight(float throttle);
+	void GripLeft() { LController->Grip(); }
+	void ReleaseLeft() { LController->Release(); }
+	void GripRight() { RController->Grip(); }
+	void ReleaseRight() { RController->Release(); }
 	void BeginTeleport();
 	void FinishTeleport();
 	void UpdateBlinkers();
@@ -47,10 +52,10 @@ private:
 	class UCameraComponent *Camera;
 	
 	UPROPERTY(VisibleAnywhere)
-	class AHandController *LController;
+	AHandController *LController;
 
 	UPROPERTY(VisibleAnywhere)
-	class AHandController *RController;
+	AHandController *RController;
 
 	UPROPERTY(VisibleAnywhere)
 	class USceneComponent *VRRoot;
